@@ -56,13 +56,15 @@ async function fetchNewComments(limit) {
       `https://www.reddit.com/r/all/comments.json?limit=${limit}&raw_json=1`,
       {
         headers: {
-          "User-Agent": "RedditSocialListening/1.0.0",
+          "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
           Accept: "application/json",
         },
       }
     );
 
     if (!response.ok) {
+      logger.error(`Reddit API returned status ${response.status}: ${response.statusText}`);
+      logger.error(`Response headers:`, Object.fromEntries(response.headers.entries()));
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
