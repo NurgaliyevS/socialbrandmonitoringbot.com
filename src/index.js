@@ -35,7 +35,7 @@ logger.add(
 );
 
 
-export function checkKeywordMatch(content, keywords) {
+function checkKeywordMatch(content, keywords) {
   const lowerContent = content.toLowerCase();
   
   for (const keyword of keywords) {
