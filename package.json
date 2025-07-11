@@ -4,10 +4,7 @@
   "description": "Automated Reddit post analyzer and outreach tool",
   "main": "src/active-users.js",
   "scripts": {
-    "start:finder": "node src/client-find-leads.js",
-    "start:bot": "node src/telegram-bot-client.js",
-    "start:active-users": "node src/active-users.js",
-    "start": "concurrently \"npm run start:bot\" \"npm run start:active-users\""
+    "start": "node src/index.js"
   },
   "dependencies": {
     "dotenv": "^16.0.3",
