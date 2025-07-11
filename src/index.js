@@ -6,15 +6,6 @@ const winston = require("winston");
 const fs = require("fs").promises;
 const path = require("path");
 
-// Initialize Reddit client
-const reddit = new Snoowrap({
-  userAgent: process.env.REDDIT_USER_AGENT,
-  clientId: process.env.REDDIT_CLIENT_ID,
-  clientSecret: process.env.REDDIT_CLIENT_SECRET,
-  username: process.env.REDDIT_USERNAME,
-  password: process.env.REDDIT_PASSWORD,
-});
-
 // Configure logger
 const logger = winston.createLogger({
   level: "info",
