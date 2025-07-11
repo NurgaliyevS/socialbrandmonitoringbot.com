@@ -5,7 +5,6 @@ const cron = require("node-cron");
 const winston = require("winston");
 const fs = require("fs").promises;
 const path = require("path");
-const TelegramBot = require("node-telegram-bot-api");
 
 // Initialize Reddit client
 const reddit = new Snoowrap({
