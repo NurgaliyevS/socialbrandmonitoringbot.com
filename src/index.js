@@ -144,6 +144,12 @@ async function runMonitoring() {
     logger.info("Completed monitoring process");
   } catch (error) {
     logger.error("Error in monitoring process:", error);
+    
+    // If we get a 403 or 429, wait longer before next attempt
+    if (error.message.includes('403') || error.message.includes('429')) {
+      logger.warn("Rate limited or blocked by Reddit. Waiting 5 minutes before next attempt.");
+      // Don't exit, just log the error and continue
+    }
   }
 }
 
