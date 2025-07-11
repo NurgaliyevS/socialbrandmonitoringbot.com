@@ -1,10 +1,17 @@
 require("dotenv").config();
-const Snoowrap = require("snoowrap");
-const OpenAI = require("openai");
 const cron = require("node-cron");
 const winston = require("winston");
 const fs = require("fs").promises;
 const path = require("path");
+
+// Ensure logs directory exists
+async function ensureLogsDirectory() {
+  try {
+    await fs.mkdir("logs", { recursive: true });
+  } catch (error) {
+    console.error("Error creating logs directory:", error);
+  }
+}
 
 // Configure logger
 const logger = winston.createLogger({
@@ -24,7 +31,6 @@ logger.add(
     format: winston.format.simple(),
   })
 );
-
 
 function checkKeywordMatch(content, keywords) {
   const lowerContent = content.toLowerCase();
@@ -47,7 +53,7 @@ async function fetchNewComments(limit) {
   try {
     // Use fetch to make a direct request without authentication
     const response = await fetch(
-      `https://www.reddit.com/r/all/comments.json?limit=100&raw_json=1`,
+      `https://www.reddit.com/r/all/comments.json?limit=${limit}&raw_json=1`,
       {
         headers: {
           "User-Agent": "RedditSocialListening/1.0.0",
@@ -63,11 +69,11 @@ async function fetchNewComments(limit) {
     const data = await response.json();
 
     if (!data.data || !data.data.children) {
-      console.error("Response structure:", JSON.stringify(data, null, 2));
+      logger.error("Response structure:", JSON.stringify(data, null, 2));
       throw new Error("Invalid response format from Reddit API");
     }
 
-    console.log(data.data.children.length, "data.data.children.length");
+    logger.info(`Fetched ${data.data.children.length} comments`);
 
     return data.data.children.map((commentData) => {
       const comment = commentData.data;
@@ -93,19 +99,67 @@ async function fetchNewComments(limit) {
       };
     });
   } catch (error) {
-    console.error("Error fetching all new comments:", error);
+    logger.error("Error fetching all new comments:", error);
     throw error;
   }
 }
 
-// every minute
-cron.schedule("* * * * *", async () => {
-  logger.info("Started process");
+async function processComments(comments) {
+  // Example keywords to monitor - you can customize these
+  const keywords = process.env.KEYWORDS ? process.env.KEYWORDS.split(',') : ['AI', 'artificial intelligence', 'machine learning'];
+  
+  const matchingComments = [];
+  
+  for (const comment of comments) {
+    const matchedKeyword = checkKeywordMatch(comment.body, keywords);
+    if (matchedKeyword) {
+      matchingComments.push({
+        ...comment,
+        matchedKeyword
+      });
+      logger.info(`Keyword match found: "${matchedKeyword}" in comment by ${comment.author} in r/${comment.subreddit}`);
+    }
+  }
+  
+  return matchingComments;
+}
 
-  fetchNewComments(100)
+// Main processing function
+async function runMonitoring() {
+  try {
+    logger.info("Started monitoring process");
+    
+    const comments = await fetchNewComments(100);
+    const matchingComments = await processComments(comments);
+    
+    if (matchingComments.length > 0) {
+      logger.info(`Found ${matchingComments.length} comments matching keywords`);
+      // Here you could add logic to send notifications, save to database, etc.
+    } else {
+      logger.info("No matching comments found");
+    }
+    
+    logger.info("Completed monitoring process");
+  } catch (error) {
+    logger.error("Error in monitoring process:", error);
+  }
+}
 
-  logger.info("Completed activity");
+// Initialize logs directory and start monitoring
+async function initialize() {
+  await ensureLogsDirectory();
+  
+  // Run initial monitoring
+  await runMonitoring();
+  
+  // Schedule monitoring every minute
+  cron.schedule("* * * * *", runMonitoring);
+  
+  logger.info("Social Brand Monitoring Bot - Running every minute");
+}
+
+// Start the application
+initialize().catch(error => {
+  logger.error("Failed to initialize application:", error);
+  process.exit(1);
 });
-
-// Initial run - removed to prevent immediate execution
-logger.info("Social Brand Monitoring Bot - Will run every minute");
